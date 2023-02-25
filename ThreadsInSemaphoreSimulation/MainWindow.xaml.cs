@@ -56,7 +56,17 @@ public partial class MainWindow : Window
                 var t = Thread.CurrentThread;
                 Dispatcher.Invoke(()=>WaitingThreads.Remove(t));
                 Dispatcher.Invoke(()=>CurrentWorkingThreads.Add(t));
-                Thread.Sleep(7000);
+                var workTime = Random.Shared.Next(3, 10);
+
+                t.Name = t.Name + ' ' + workTime;
+
+
+                while (workTime > 0)
+                {
+                    Thread.Sleep(1000);
+                    workTime--;
+                }
+
                 Dispatcher.Invoke(() => CurrentWorkingThreads.Remove(t));
                 s.Release();
             }

@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using ThreadsInSemaphoreSimulation.UserControls;
 
 namespace ThreadsInSemaphoreSimulation;
 
@@ -23,18 +24,24 @@ public partial class MainWindow : Window
     public ObservableCollection<Thread> WaitingThreads { get; set; }
     public ObservableCollection<Thread> CurrentWorkingThreads { get; set; }
     private readonly Semaphore _semaphore;
+    private decimal upDownValue;
+    private int workingThreadsCount;
+    private int availableThreadsCount;
+    private int maxThreadsCount;
+
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
 
-
         CreatedThreads = new();
         WaitingThreads = new();
         CurrentWorkingThreads = new();
-
-        _semaphore = new(3, 3, "Sema");
+        upDownValue = UpDown.Value;
+        _semaphore = new(2, 10, "Sema");
+        workingThreadsCount = 0;
+        availableThreadsCount = 2;
     }
 
     private void BtnCreate_Click(object sender, RoutedEventArgs e)
@@ -47,16 +54,18 @@ public partial class MainWindow : Window
 
     private void MyThreadSimulation(object? semaphore)
     {
-        if(semaphore is Semaphore s)
+        if (semaphore is Semaphore s)
         {
             Thread.Sleep(3000);
 
-            if(s.WaitOne())
+            if (s.WaitOne())
             {
                 var t = Thread.CurrentThread;
-                Dispatcher.Invoke(()=>WaitingThreads.Remove(t));
-                Dispatcher.Invoke(()=>CurrentWorkingThreads.Add(t));
-                var workTime = Random.Shared.Next(3, 10);
+                Dispatcher.Invoke(() => WaitingThreads.Remove(t));
+                Dispatcher.Invoke(() => CurrentWorkingThreads.Add(t));
+                availableThreadsCount--;
+                workingThreadsCount++;
+                var workTime = 15;
 
                 t.Name = t.Name + ' ' + workTime;
 
@@ -68,6 +77,8 @@ public partial class MainWindow : Window
                 }
 
                 Dispatcher.Invoke(() => CurrentWorkingThreads.Remove(t));
+                availableThreadsCount++;
+                workingThreadsCount--;
                 s.Release();
             }
         }
@@ -75,12 +86,38 @@ public partial class MainWindow : Window
 
     private void CreatedThreadsThreadsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if(CreatedThreadsThreadsList.SelectedItem is Thread t)
+        if (CreatedThreadsThreadsList.SelectedItem is Thread t)
         {
             CreatedThreads.Remove(t);
 
             WaitingThreads.Add(t);
             t.Start(_semaphore);
+        }
+    }
+
+    private void UC_NumericUpDown_ValueChanged(object sender, EventArgs e)
+    {
+        if (sender is UC_NumericUpDown upDown)
+        {
+            if (upDownValue < upDown.Value)
+            {
+                _semaphore?.Release();
+                availableThreadsCount++;
+            }
+            else
+            {
+                if (availableThreadsCount == 0)
+                {
+                    upDown.Value = upDownValue;
+                    return;
+                }
+
+                availableThreadsCount--;
+                _semaphore?.WaitOne();
+            }
+
+
+            upDownValue = upDown.Value;
         }
     }
 }

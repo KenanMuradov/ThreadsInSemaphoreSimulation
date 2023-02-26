@@ -25,9 +25,7 @@ public partial class MainWindow : Window
     public ObservableCollection<Thread> CurrentWorkingThreads { get; set; }
     private readonly Semaphore _semaphore;
     private decimal upDownValue;
-    private int workingThreadsCount;
     private int availableThreadsCount;
-    private int maxThreadsCount;
 
 
     public MainWindow()
@@ -40,7 +38,6 @@ public partial class MainWindow : Window
         CurrentWorkingThreads = new();
         upDownValue = UpDown.Value;
         _semaphore = new(2, 10, "Sema");
-        workingThreadsCount = 0;
         availableThreadsCount = 2;
     }
 
@@ -64,11 +61,9 @@ public partial class MainWindow : Window
                 Dispatcher.Invoke(() => WaitingThreads.Remove(t));
                 Dispatcher.Invoke(() => CurrentWorkingThreads.Add(t));
                 availableThreadsCount--;
-                workingThreadsCount++;
-                var workTime = 15;
+                var workTime = Random.Shared.Next(3,10);
 
-                t.Name = t.Name + ' ' + workTime;
-
+                t.Name = t.Name + "->" + workTime +" Second Left";
 
                 while (workTime > 0)
                 {
@@ -78,7 +73,6 @@ public partial class MainWindow : Window
 
                 Dispatcher.Invoke(() => CurrentWorkingThreads.Remove(t));
                 availableThreadsCount++;
-                workingThreadsCount--;
                 s.Release();
             }
         }
